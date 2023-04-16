@@ -212,7 +212,7 @@ function activate(context) {
 		let statesToAnimate = readDebugLogs(debugLogsPath, ["8", "15"], dataWanted);
 		// console.log(statesToAnimate);
 
-		const panel = vscode.window.createWebviewPanel(
+		let panel = vscode.window.createWebviewPanel(
 			'vizualize',
 			'Vizualize',
 			vscode.ViewColumn.Two,
@@ -222,9 +222,18 @@ function activate(context) {
 		panel.webview.html = getWebviewContent(cssPath);
 		panel.webview.postMessage(statesToAnimate);
 
+		panel.onDidDispose(
+			() => {
+				panel = undefined;
+				terminal.dispose();
+			},
+			undefined,
+			context.subscriptions
+		);
+		
 		//add a speed controller maybe
 		//give a recompile button?
-		//insert a onDidDispose - to remove exceptions
+		//insert a onDidDispose - to remove exceptions - DONE
 		//remaining - get input name of array
 		//move functions into separate files
 	});
