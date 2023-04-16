@@ -1,0 +1,141 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    width: 100%;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    background-color: #f7f7f7;
+}
+
+#container {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    text-align: center;
+}
+
+.line-container {
+    width: 100%;
+    box-sizing: border-box;
+    display: block;
+    background-color: #333;
+    color: white;
+    font-family: "JetBrains Mono", "Courier New", Courier, monospace;
+    padding: 10px;
+    margin-bottom: 25px; 
+    font-size: 1.5em;
+}
+
+
+.varr-label {
+    display: inline-block;
+    margin-right: 15px;
+    font-weight: bold;
+    text-align: center;
+    font-size: 20px;
+    vertical-align: middle;
+}
+
+.varr-value {
+    display: inline-block;
+    margin-right: 15px;
+    font-weight: normal;
+    text-align: center;
+    font-size: 20px;
+    vertical-align: middle;
+}
+  
+
+.box {
+    display: inline-block;
+    justify-content: center;
+    align-items: center;
+    width: 50px;
+    height: 50px;
+    margin: 5px;
+    font-size: 24px;
+    text-align: center;
+    border: 1px solid gray;
+    background-color: white;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.box.highlighted {
+    background-color: lightblue;
+    border: 2.5px solid blue;
+}
+
+#scroller {
+    display: block;
+    margin: 20px auto;
+    width: 80%;
+}
+
+#play-pause-button,
+#restart-button {
+    display: inline-block;
+    margin: 10px;
+    padding: 8px 16px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    border: 2px solid black;
+    border-radius: 4px;
+    background-color: white;
+    color: black;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+#play-pause-button:hover,
+#restart-button:hover {
+    background-color: black;
+    color: white;
+}
+
+
+.player button i {
+    font-size: 24px;
+    margin-right: 8px;
+}
+
+.play-pause i {
+    content: "\f04b";
+    /* play icon */
+}
+
+.restart i {
+    content: "\f0e2";
+    /* undo icon */
+}
+
+.buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#play-pause-button,
+#restart-button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 50px;
+    height: 50px;
+    border: none;
+    border-radius: 50%;
+    background-color: #444;
+    color: #fff;
+    font-size: 24px;
+    margin-right: 10px;
+    cursor: pointer;
+}

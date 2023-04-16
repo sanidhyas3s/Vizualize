@@ -16,22 +16,16 @@ function getBreakpoints() {
 	return [lineNumbers[0], lineNumbers[lineNumbers.length - 1]];
 }
 
-async function compileActiveFile(context, activeEditor) {
+async function compileActiveFile(context, activeEditor, terminal) {
 	let filePath = activeEditor.document.uri.fsPath;
 	let fileName = path.parse(path.basename(filePath)).name;
-	let terminal = vscode.window.createTerminal(`Terminal for Compilation`);
 	let destinationFilePath = `${context.extensionPath}/user_compiled/${fileName}`;
 	terminal.sendText(`g++ -g "${filePath}" -o "${destinationFilePath}"`);
 	// terminal.dispose();
 	return destinationFilePath;
 }
 
-async function createDebugLogs(context, userCompiledPath, inputPath) {
-	let terminalOptions = {
-		name: `Terminal for Debug Logs`,
-		cwd: context.extensionPath
-	};
-	let terminal = vscode.window.createTerminal(terminalOptions);
+async function createDebugLogs(context, userCompiledPath, inputPath, terminal) {
 	if (inputPath) {
 		terminal.sendText(`gdb "${userCompiledPath}" -ex 'run < ${inputPath}' -ex 'source gdb_command.txt' -batch -ex 'c' -ex 'y' -ex 'q' -ex 'y'`);
 	}
@@ -66,8 +60,8 @@ function readDebugLogs(logfile, breakpoints, variablesWanted) {
 	const variables = new Map();
 	for (let variable of variablesWanted) {
 		variables.set(variable.name, variable.type);
-		if(variable.type === "int array" || variable.type === "string array") {
-			arrayIterators.set(variable.name,variable.iterators);
+		if (variable.type === "int array" || variable.type === "string array") {
+			arrayIterators.set(variable.name, variable.iterators);
 		}
 	}
 
@@ -142,23 +136,18 @@ function readDebugLogs(logfile, breakpoints, variablesWanted) {
 	variableValuesArray.push([currentLineOfExecution, tempVariableValuesArray]);
 
 	let states = [];
-	for(let frame of variableValuesArray)
-	{
-		let state = {line: frame[0]};
+	for (let frame of variableValuesArray) {
+		let state = { line: frame[0] };
 		let vars = [];
-		for(let v of frame[1])
-		{
-			let vinsert = {name:v[0]};
+		for (let v of frame[1]) {
+			let vinsert = { name: v[0] };
 			vinsert.type = variables.get(v[0]);
 			vinsert.value = v[1];
-			if(vinsert.type === 'int array' || vinsert.type === "string array"){
+			if (vinsert.type === 'int array' || vinsert.type === "string array") {
 				vinsert.iterators = [];
-				for(let i of arrayIterators.get(vinsert.name))
-				{
-					for(let temp of frame[1])
-					{
-						if(i===temp[0])
-						{
+				for (let i of arrayIterators.get(vinsert.name)) {
+					for (let temp of frame[1]) {
+						if (i === temp[0]) {
 							vinsert.iterators.push(temp[1]);
 						}
 					}
@@ -203,27 +192,190 @@ function activate(context) {
 			vscode.window.showErrorMessage("Only C++ files are supported to be vizualized.");
 			return;
 		}
+		let terminalOptions = {
+			name: `Terminal for Debug Logs`,
+			cwd: context.extensionPath
+		};
+		let terminal = vscode.window.createTerminal(terminalOptions);
 		const breakpoints = getBreakpoints();
-		const userCompiledPath = await compileActiveFile(context, activeEditor);
+		const userCompiledPath = await compileActiveFile(context, activeEditor, terminal);
 		const inputPath = await selectFile();
-		const debugLogsPath = await createDebugLogs(context, userCompiledPath, inputPath);
-		// TO-DO: move the function's individual terminals to a single terminal and kill them at the end, also deleting the files  which no longer will be used.
-		//sleep(something)
+		const debugLogsPath = await createDebugLogs(context, userCompiledPath, inputPath, terminal);
+		// IMPORTANT
+		// sleep(something) I
+		// terminal.dispose();
 		let dataWanted = [
 			{ name: 'a', type: 'int array', iterators: ['i'] },//to be added: start: 'lo', end: 'hi'
 			{ name: 'i', type: 'int' },
 			{ name: 'n', type: 'int' }
 		];
 		let statesToAnimate = readDebugLogs(debugLogsPath, ["8", "15"], dataWanted);
-		console.log(statesToAnimate);
+		// console.log(statesToAnimate);
 
-		
+		const panel = vscode.window.createWebviewPanel(
+			'vizualize',
+			'Vizualize',
+			vscode.ViewColumn.Two,
+			{ enableScripts: true }
+		);
+		const cssPath = `${context.extensionPath}/webview/styles.css`;
+		panel.webview.html = getWebviewContent(cssPath);
+		panel.webview.postMessage(statesToAnimate);
 
+		//add a speed controller maybe
 		//give a recompile button?
 		//insert a onDidDispose - to remove exceptions
 		//remaining - get input name of array
+		//move functions into separate files
 	});
 	context.subscriptions.push(disposable);
+}
+
+function getWebviewContent(cssPath) {
+	const css = fs.readFileSync(cssPath, 'utf8');
+	return `<!DOCTYPE html>
+	<html>
+	
+	<head>
+		<title>Animated Array</title>
+		<style>
+			${css}
+		</style>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+	</head>
+	
+	<body>
+		<div id="container"></div>
+		<input type="range" id="scroller" min="0" max="100" value="0" step="0.1" />
+		<br>
+		<div class="buttons">
+			<button id="play-pause-button"><i class="fas fa-play"></i></button>
+			<button id="restart-button"><i class="fas fa-redo"></i></button>
+		</div>
+		<script>
+			let states;
+			let paused = true;
+			let currentIndex = 0;
+			let timerId;
+
+			const container = document.getElementById("container");
+			const scroller = document.getElementById("scroller");
+			const playPauseButton = document.getElementById("play-pause-button");
+			const restartButton = document.getElementById("restart-button");
+	
+			window.addEventListener('message', event => {
+				//set and animate the data received
+				states = event.data;
+				displayState(0);
+			});
+	
+			function displayState(stateIndex) {
+				container.innerHTML = "";
+				const state = states[stateIndex];
+	
+				const lineContainer = document.createElement("div");
+				lineContainer.innerText = state.line;
+				lineContainer.classList.add("line-container");
+				container.appendChild(lineContainer);
+				for (let varr of state.vars) {
+					if (varr.type === 'int array' || varr.type === 'string array') {
+						const varrContainer = document.createElement("div");
+						varrContainer.classList.add("varr-container");
+	
+						const label = document.createElement("div");
+						label.innerText = varr.name + " : ";
+						label.classList.add("varr-label");
+	
+						varrContainer.appendChild(label);
+	
+						const boxContainer = document.createElement("div");
+						boxContainer.style.display = "inline-block";
+						for (let i = 0; i < varr.value.length; i++) {
+							const box = document.createElement("div");
+							box.classList.add("box");
+							if (varr.iterators.includes(i)) {
+								box.classList.add("highlighted");
+							}
+							box.innerText = varr.value[i];
+							box.style.display = "inline-block";
+							boxContainer.appendChild(box);
+						}
+						varrContainer.appendChild(boxContainer); // add box elements to container
+	
+						container.appendChild(varrContainer);
+					}
+				}
+				for (let varr of state.vars) {
+					if (varr.type === 'int' || varr.type === 'string') {
+						const varContainer = document.createElement("div");
+						varContainer.classList.add("var-container");
+	
+						const label = document.createElement("div");
+						label.innerText = varr.name + " : ";
+						label.classList.add("varr-label");
+	
+						const value = document.createElement("div");
+						value.innerText = varr.value;
+						value.classList.add("varr-value");
+	
+						varContainer.appendChild(label);
+						varContainer.appendChild(value);
+	
+						container.appendChild(varContainer);
+					}
+				}
+				updateScroller();
+			}
+	
+			function updateScroller() {
+				scroller.value = 100 * currentIndex / (states.length - 1);
+			}
+	
+			function play() {
+				playPauseButton.innerHTML = '<i class="fas fa-pause"></i>';
+				timerId = setInterval(() => {
+					displayState(currentIndex);
+					currentIndex++;
+					if (currentIndex >= states.length) {
+						clearInterval(timerId);
+						currentIndex = 0;
+						playPauseButton.innerHTML = '<i class="fas fa-play"></i>';
+						paused = true;
+					}
+				}, 500);
+			}
+	
+			function pause() {
+				playPauseButton.innerHTML = '<i class="fas fa-play"></i>';
+				clearInterval(timerId);
+			}
+	
+			function restart() {
+				currentIndex = 0;
+				displayState(0);
+			}
+	
+			playPauseButton.addEventListener("click", () => {
+				if (paused) {
+					paused = false;
+					play();
+				} else {
+					paused = true;
+					pause();
+				}
+			});
+	
+			scroller.addEventListener("change", () => {
+				currentIndex = Math.floor((states.length - 1) * scroller.value / 100);
+				displayState(currentIndex);
+			});
+	
+			restartButton.addEventListener("click", restart);
+	
+		</script>
+	</body>
+	
+	</html>`;
 }
 
 function deactivate() { }
