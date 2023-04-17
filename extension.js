@@ -256,7 +256,6 @@ function activate(context) {
 		let dataWanted = [];
 		let statesToAnimate;
 		dataWanted = await addVariable(dataWanted);
-		console.log(dataWanted);
 		statesToAnimate = readDebugLogs(debugLogsPath, breakpoints, dataWanted);
 
 		let panel = vscode.window.createWebviewPanel(
