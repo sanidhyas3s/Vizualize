@@ -223,7 +223,7 @@ async function addVariable(dataWanted) {
 		prompt: 'Enter variable name:',
 		placeHolder: 'Variable Name'
 	});
-	if (selection.value === 'int array' || selection.value === 'int array') {
+	if (selection.value === 'int array' || selection.value === 'string array') {
 		dataWanted.push({ name: userInput, type: selection.value, iterators: [] });
 		return dataWanted;
 	}
@@ -256,6 +256,7 @@ function activate(context) {
 		let dataWanted = [];
 		let statesToAnimate;
 		dataWanted = await addVariable(dataWanted);
+		console.log(dataWanted);
 		statesToAnimate = readDebugLogs(debugLogsPath, breakpoints, dataWanted);
 
 		let panel = vscode.window.createWebviewPanel(
