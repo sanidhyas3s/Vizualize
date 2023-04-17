@@ -30,10 +30,13 @@ body {
     color: white;
     font-family: "JetBrains Mono", "Courier New", Courier, monospace;
     padding: 10px;
-    margin-bottom: 25px; 
+    margin-bottom: 25px;
     font-size: 1.5em;
 }
 
+.line-container:hover {
+    background: linear-gradient(#294f9b, #568dfd);
+}
 
 .varr-label {
     display: inline-block;
@@ -52,7 +55,7 @@ body {
     font-size: 20px;
     vertical-align: middle;
 }
-  
+
 
 .box {
     display: inline-block;
@@ -69,7 +72,7 @@ body {
 }
 
 .box.highlighted {
-    background-color: lightblue;
+    background: lightblue;
     border: 2.5px solid blue;
 }
 
@@ -80,7 +83,9 @@ body {
 }
 
 #play-pause-button,
-#restart-button {
+#restart-button,
+#plus-button,
+#recompile-button {
     display: inline-block;
     margin: 10px;
     padding: 8px 16px;
@@ -93,15 +98,16 @@ body {
     background-color: white;
     color: black;
     cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
+    /* transition: background-color 0.s ease-in-out; */
 }
 
 #play-pause-button:hover,
-#restart-button:hover {
-    background-color: black;
+#restart-button:hover,
+#plus-button:hover,
+#recompile-button:hover {
+    background: linear-gradient(#294f9b, #568dfd);
     color: white;
 }
-
 
 .player button i {
     font-size: 24px;
@@ -118,6 +124,16 @@ body {
     /* undo icon */
 }
 
+.plus i {
+    content: "\f067";
+    /* plus icon */
+}
+
+.recompile i {
+    content: "\f1c9";
+    /* code icon */
+}
+
 .buttons {
     display: flex;
     justify-content: center;
@@ -125,7 +141,9 @@ body {
 }
 
 #play-pause-button,
-#restart-button {
+#restart-button,
+#plus-button,
+#recompile-button {
     display: inline-flex;
     justify-content: center;
     align-items: center;

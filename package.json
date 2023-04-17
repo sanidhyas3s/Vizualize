@@ -17,7 +17,18 @@
         "command": "vizualize.animate",
         "title": "Vizualize"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Vizualize",
+      "properties": {
+        "vizualize.speed": {
+          "title": "Animation Speed",
+          "type": "number",
+          "default": 750,
+          "description": "The duration of each frame of animation in milliseconds."
+        }
+      }
+    }
   },
   "scripts": {
     "lint": "eslint .",

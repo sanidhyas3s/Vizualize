@@ -2,19 +2,27 @@ const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
 
-function getBreakpoints() {
-	const activeFilePath = vscode.window.activeTextEditor.document.uri.fsPath;
-	const breakpoints = vscode.debug.breakpoints;
-	const lineNumbers = [];
-	for (const breakpoint of breakpoints) {
-		const breakpointLocation = breakpoint['location'];
-		if (breakpointLocation && breakpointLocation.uri.fsPath === activeFilePath) {
-			lineNumbers.push(breakpointLocation.range.start.line + 1);
+async function getBreakpoints(activeEditor) {
+	const activeFilePath = activeEditor.document.uri.fsPath;
+	let breakpoints = vscode.debug.breakpoints;
+	let lineNumbers = [];
+
+	while (!lineNumbers.length) {
+		for (const breakpoint of breakpoints) {
+			const breakpointLocation = breakpoint['location'];
+			if (breakpointLocation && breakpointLocation.uri.fsPath === activeFilePath) {
+				lineNumbers.push(breakpointLocation.range.start.line + 1);
+			}
+		}
+
+		if (!lineNumbers.length) {
+			await new Promise(resolve => setTimeout(resolve, 1000));
+			vscode.debug.onDidChangeBreakpoints(() => { breakpoints = vscode.debug.breakpoints });
 		}
 	}
-
-	return [lineNumbers[0], lineNumbers[lineNumbers.length - 1]];
+	return [Math.min(...lineNumbers).toString(), Math.max(...lineNumbers).toString()];
 }
+
 
 async function compileActiveFile(context, activeEditor, terminal) {
 	let filePath = activeEditor.document.uri.fsPath;
@@ -109,7 +117,7 @@ function readDebugLogs(logfile, breakpoints, variablesWanted) {
 						let index = value[1] + 3;
 						if (logLine[index - 1] !== '{') {
 							index = parseString(logLine, index, '=', currentLineLength)[1];
-							index += 2;
+							index += 3;
 						}
 						let x = parseString(logLine, index, '}', currentLineLength);
 						tempVariableValuesArray.push([temp[0], x[0].split(/,\s*/)]);
@@ -166,6 +174,7 @@ async function selectFile() {
 	const selection = await vscode.window.showQuickPick(['Select Input File', 'Skip Input File'], { placeHolder: 'Do you want to select an input file?' });
 	if (selection === 'Select Input File') {
 		let options = {
+			matchOnDetail: true,
 			canSelectFiles: true,
 			canSelectFolders: false,
 			canSelectMany: false,
@@ -180,9 +189,52 @@ async function selectFile() {
 	return null;
 }
 
+async function addVariable(dataWanted) {
+	const variableTypes = [
+		{ label: 'Numerical Array (or equivalent)', value: 'int array' },
+		{ label: 'String Array (or equivalent)', value: 'string array' },
+		{ label: 'Iterator to an Array', value: 'iter' },
+		{ label: 'Numerical Variable', value: 'int' },
+		{ label: 'String Variable', value: 'string' }
+	]
+	const selection = await vscode.window.showQuickPick(
+		variableTypes,
+		{ placeHolder: 'Select the type of variable to add to the vizualization:' }
+	);
+	if (selection.value === 'iter') {
+		let arrayNames = dataWanted.filter(item => item.type === 'int array' || item.type === 'string array').map(item => item.name);
+		const arrayName = await vscode.window.showQuickPick(
+			arrayNames,
+			{ placeHolder: 'Select the array to which you want to add the iterator:' }
+		);
+		const iterator = await vscode.window.showInputBox({
+			prompt: 'Enter iterator\'s variable name:',
+			placeHolder: 'Iterator\'s Name'
+		});
+		dataWanted.push({ name: iterator, type: 'int' })
+		for (let element of dataWanted) {
+			if (element.name === arrayName) {
+				element.iterators.push(iterator);
+			}
+		}
+		return dataWanted;
+	}
+	const userInput = await vscode.window.showInputBox({
+		prompt: 'Enter variable name:',
+		placeHolder: 'Variable Name'
+	});
+	if (selection.value === 'int array' || selection.value === 'int array') {
+		dataWanted.push({ name: userInput, type: selection.value, iterators: [] });
+		return dataWanted;
+	}
+	dataWanted.push({ name: userInput, type: selection.value });
+	return dataWanted;
+}
 
 function activate(context) {
 	let disposable = vscode.commands.registerCommand('vizualize.animate', async () => {
+		const config = vscode.workspace.getConfiguration();
+		const speed = config.get('vizualize.speed');
 		let activeEditor = vscode.window.activeTextEditor;
 		if (!activeEditor) {
 			vscode.window.showErrorMessage("No active editor.");
@@ -197,20 +249,22 @@ function activate(context) {
 			cwd: context.extensionPath
 		};
 		let terminal = vscode.window.createTerminal(terminalOptions);
-		const breakpoints = getBreakpoints();
-		const userCompiledPath = await compileActiveFile(context, activeEditor, terminal);
-		const inputPath = await selectFile();
-		const debugLogsPath = await createDebugLogs(context, userCompiledPath, inputPath, terminal);
+		let breakpoints = await getBreakpoints(activeEditor);
+		let userCompiledPath = await compileActiveFile(context, activeEditor, terminal);
+		let inputPath = await selectFile();
+		let debugLogsPath = await createDebugLogs(context, userCompiledPath, inputPath, terminal);
 		// IMPORTANT
-		// sleep(something) I
+		// sleep(something)
 		// terminal.dispose();
-		let dataWanted = [
-			{ name: 'a', type: 'int array', iterators: ['i'] },//to be added: start: 'lo', end: 'hi'
-			{ name: 'i', type: 'int' },
-			{ name: 'n', type: 'int' }
-		];
-		let statesToAnimate = readDebugLogs(debugLogsPath, ["8", "15"], dataWanted);
-		// console.log(statesToAnimate);
+		// let dataWanted = [
+		// 	{ name: 'a', type: 'int array', iterators: ['i'] },//to be added: start: 'lo', end: 'hi'
+		// 	{ name: 'i', type: 'int' },
+		// 	{ name: 'n', type: 'int' }
+		// ];
+		let dataWanted = [];
+		let statesToAnimate;
+		dataWanted = await addVariable(dataWanted);
+		statesToAnimate = readDebugLogs(debugLogsPath, breakpoints, dataWanted);
 
 		let panel = vscode.window.createWebviewPanel(
 			'vizualize',
@@ -219,28 +273,50 @@ function activate(context) {
 			{ enableScripts: true }
 		);
 		const cssPath = `${context.extensionPath}/webview/styles.css`;
-		panel.webview.html = getWebviewContent(cssPath);
+		panel.webview.html = getWebviewContent(cssPath, speed);
 		panel.webview.postMessage(statesToAnimate);
 
-		panel.onDidDispose(
-			() => {
-				panel = undefined;
-				terminal.dispose();
+		panel.webview.onDidReceiveMessage(
+			async message => {
+				if (message.command === 'addVariable') {
+					dataWanted = await addVariable(dataWanted);
+					statesToAnimate = readDebugLogs(debugLogsPath, breakpoints, dataWanted);
+					panel.webview.postMessage(statesToAnimate);
+				}
+				if (message.command === 'recompile') {
+					userCompiledPath = await compileActiveFile(context, activeEditor, terminal);
+
+					setTimeout(async () => {
+						debugLogsPath = await createDebugLogs(context, userCompiledPath, inputPath, terminal);
+						breakpoints = await getBreakpoints(activeEditor);
+						setTimeout(() => {
+							statesToAnimate = readDebugLogs(debugLogsPath, breakpoints, dataWanted);
+							panel.webview.postMessage(statesToAnimate);
+						}, 1000);
+
+					}, 1000);
+
+				}
 			},
 			undefined,
 			context.subscriptions
 		);
-		
-		//add a speed controller maybe
-		//give a recompile button?
-		//insert a onDidDispose - to remove exceptions - DONE
-		//remaining - get input name of array
-		//move functions into separate files
+
+		panel.onDidDispose(
+			() => {
+				panel = undefined;
+				terminal.sendText(`rm ${userCompiledPath}`);
+				terminal.sendText(`clear`);
+				setTimeout(() => {terminal.dispose();},1000)
+			},
+			undefined,
+			context.subscriptions
+		);
 	});
 	context.subscriptions.push(disposable);
 }
 
-function getWebviewContent(cssPath) {
+function getWebviewContent(cssPath, speed) {
 	const css = fs.readFileSync(cssPath, 'utf8');
 	return `<!DOCTYPE html>
 	<html>
@@ -258,30 +334,47 @@ function getWebviewContent(cssPath) {
 		<input type="range" id="scroller" min="0" max="100" value="0" step="0.1" />
 		<br>
 		<div class="buttons">
-			<button id="play-pause-button"><i class="fas fa-play"></i></button>
-			<button id="restart-button"><i class="fas fa-redo"></i></button>
+			<button id="play-pause-button" title="Play/Pause Vizualization"><i class="fas fa-play"></i></button>
+			<button id="restart-button" title="Restart Vizualization"><i class="fas fa-redo"></i></button>
+		</div>
+		<div class="buttons">
+			<button id="plus-button" title="Add Variable"><i class="fas fa-plus"></i></button>
+			<button id="recompile-button" title="Recompile Code"><i class="fa fa-file-code"></i></button>
 		</div>
 		<script>
+			const vscode = acquireVsCodeApi();
+
 			let states;
 			let paused = true;
 			let currentIndex = 0;
 			let timerId;
+			let speed = ${speed};
 
 			const container = document.getElementById("container");
 			const scroller = document.getElementById("scroller");
 			const playPauseButton = document.getElementById("play-pause-button");
 			const restartButton = document.getElementById("restart-button");
+			const addVarButton = document.getElementById("plus-button");
+			const recompileButton = document.getElementById("recompile-button");
 	
 			window.addEventListener('message', event => {
 				//set and animate the data received
 				states = event.data;
-				displayState(0);
+				displayState(currentIndex);
+			});
+			
+			addVarButton.addEventListener("click", () => {
+				vscode.postMessage({ command: 'addVariable' });
+			});
+
+			recompileButton.addEventListener("click", () => {
+				vscode.postMessage({ command: 'recompile' });
 			});
 	
 			function displayState(stateIndex) {
 				container.innerHTML = "";
 				const state = states[stateIndex];
-	
+				
 				const lineContainer = document.createElement("div");
 				lineContainer.innerText = state.line;
 				lineContainer.classList.add("line-container");
@@ -333,11 +426,11 @@ function getWebviewContent(cssPath) {
 						container.appendChild(varContainer);
 					}
 				}
-				updateScroller();
+				updateScroller(stateIndex);
 			}
 	
-			function updateScroller() {
-				scroller.value = 100 * currentIndex / (states.length - 1);
+			function updateScroller(Index) {
+				scroller.value = 100 * Index / (states.length - 1);
 			}
 	
 			function play() {
@@ -351,7 +444,7 @@ function getWebviewContent(cssPath) {
 						playPauseButton.innerHTML = '<i class="fas fa-play"></i>';
 						paused = true;
 					}
-				}, 500);
+				}, speed);
 			}
 	
 			function pause() {
@@ -394,4 +487,4 @@ module.exports = {
 	deactivate
 }
 
-deactivate()
+deactivate();
