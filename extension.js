@@ -253,14 +253,6 @@ function activate(context) {
 		let userCompiledPath = await compileActiveFile(context, activeEditor, terminal);
 		let inputPath = await selectFile();
 		let debugLogsPath = await createDebugLogs(context, userCompiledPath, inputPath, terminal);
-		// IMPORTANT
-		// sleep(something)
-		// terminal.dispose();
-		// let dataWanted = [
-		// 	{ name: 'a', type: 'int array', iterators: ['i'] },//to be added: start: 'lo', end: 'hi'
-		// 	{ name: 'i', type: 'int' },
-		// 	{ name: 'n', type: 'int' }
-		// ];
 		let dataWanted = [];
 		let statesToAnimate;
 		dataWanted = await addVariable(dataWanted);
@@ -293,7 +285,6 @@ function activate(context) {
 							statesToAnimate = readDebugLogs(debugLogsPath, breakpoints, dataWanted);
 							panel.webview.postMessage(statesToAnimate);
 						}, 1000);
-
 					}, 1000);
 
 				}
@@ -307,7 +298,7 @@ function activate(context) {
 				panel = undefined;
 				terminal.sendText(`rm ${userCompiledPath}`);
 				terminal.sendText(`clear`);
-				setTimeout(() => {terminal.dispose();},1000)
+				setTimeout(() => { terminal.dispose(); }, 1000)
 			},
 			undefined,
 			context.subscriptions
@@ -473,7 +464,6 @@ function getWebviewContent(cssPath, speed) {
 			});
 	
 			restartButton.addEventListener("click", restart);
-	
 		</script>
 	</body>
 	
