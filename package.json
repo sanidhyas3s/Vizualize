@@ -1,6 +1,11 @@
 {
   "name": "vizualize",
   "displayName": "Vizualize",
+  "publisher": "sanidhyas3s",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sanidhyas3s/Vizualize"
+  },
   "description": "",
   "version": "0.0.1",
   "engines": {
