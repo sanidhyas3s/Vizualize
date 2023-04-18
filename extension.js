@@ -235,16 +235,16 @@ function activate(context) {
 			vscode.window.showErrorMessage("Vizualize - Only C++ files are supported to be vizualized.");
 			return;
 		}
-		let terminalOptions = {
-			name: `Terminal for Debug Logs`,
-			cwd: context.extensionPath
-		};
-		let terminal = vscode.window.createTerminal(terminalOptions);
 		let breakpoints = await getBreakpoints(activeEditor);
 		if (!breakpoints) {
 			vscode.window.showErrorMessage("Vizualize - Breakpoints could not be read.\n Make sure the active file has atleast one breakpoint.");
 			return;
 		}
+		let terminalOptions = {
+			name: `Terminal for Debug Logs`,
+			cwd: context.extensionPath
+		};
+		let terminal = vscode.window.createTerminal(terminalOptions);
 		let userCompiledPath = await compileActiveFile(context, activeEditor, terminal);
 		let inputPath = await selectFile();
 		let debugLogsPath = await createDebugLogs(context, userCompiledPath, inputPath, terminal);
