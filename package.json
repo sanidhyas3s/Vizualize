@@ -7,6 +7,7 @@
     "url": "https://github.com/sanidhyas3s/Vizualize"
   },
   "description": "A Code Visualiser for C++",
+  "icon": "media/zz.png",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.77.0"
