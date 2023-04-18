@@ -22,13 +22,17 @@ In the animation window, there are options to play, pause & restart the animatio
 - *Numerical Variable* - Any type of numerical variable of type int, long, float, double, etc.
 - *String Variable* - Normal string of text.
 
-
 <sup>Only C++ files are supported.</sup>
 
-
-
-
 <sup>† Commands List can be opened by the shortcut <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>  (<kbd>⌘</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> for Mac).</sup>
+
+### **Settings**
+You can adjust the animation speed in the settings panel of VS Code under `Extensions > Vizualize > Speed` or set the value of `vizualize.speed` in the `settings.json` file of VS Code. It is set to a default value of 750 milliseconds per frame.
+
+You can also customize the activation keyboard shortcut (<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Z</kbd> / <kbd>⌘</kbd>+<kbd>Alt</kbd>+<kbd>Z</kbd>) of the  extension by remapping the `vizualize.animate` command to the keycombination of your choice.
+
+
+
 ### **Requirements**
 - Visual Studio Code (obviously)
 - `g++` - A stable compliant version of the `g++` compiler
