@@ -7,18 +7,15 @@ async function getBreakpoints(activeEditor) {
 	let breakpoints = vscode.debug.breakpoints;
 	let lineNumbers = [];
 
-	while (!lineNumbers.length) {
-		for (const breakpoint of breakpoints) {
-			const breakpointLocation = breakpoint['location'];
-			if (breakpointLocation && breakpointLocation.uri.fsPath === activeFilePath) {
-				lineNumbers.push(breakpointLocation.range.start.line + 1);
-			}
+	for (const breakpoint of breakpoints) {
+		const breakpointLocation = breakpoint['location'];
+		if (breakpointLocation && breakpointLocation.uri.fsPath === activeFilePath) {
+			lineNumbers.push(breakpointLocation.range.start.line + 1);
 		}
+	}
 
-		if (!lineNumbers.length) {
-			await new Promise(resolve => setTimeout(resolve, 1000));
-			vscode.debug.onDidChangeBreakpoints(() => { breakpoints = vscode.debug.breakpoints });
-		}
+	if (!lineNumbers.length) {
+		return undefined;
 	}
 	return [Math.min(...lineNumbers).toString(), Math.max(...lineNumbers).toString()];
 }
@@ -29,7 +26,6 @@ async function compileActiveFile(context, activeEditor, terminal) {
 	let fileName = path.parse(path.basename(filePath)).name;
 	let destinationFilePath = `${context.extensionPath}/user_compiled/${fileName}`;
 	terminal.sendText(`g++ -g "${filePath}" -o "${destinationFilePath}"`);
-	// terminal.dispose();
 	return destinationFilePath;
 }
 
@@ -40,8 +36,6 @@ async function createDebugLogs(context, userCompiledPath, inputPath, terminal) {
 	else {
 		terminal.sendText(`gdb "${userCompiledPath}" -ex 'source gdb_command.txt' -batch -ex 'c' -ex 'y' -ex 'q' -ex 'y'`);
 	}
-	//terminal.dispose();
-	//currently not able to kill the terminal because it takes some time for the above command to logFileish and we can't kill the terminal before it logFileishes.
 	return `${context.extensionPath}/user_compiled/debug_logs.txt`;
 }
 
@@ -237,11 +231,11 @@ function activate(context) {
 		const speed = config.get('vizualize.speed');
 		let activeEditor = vscode.window.activeTextEditor;
 		if (!activeEditor) {
-			vscode.window.showErrorMessage("No active editor.");
+			vscode.window.showErrorMessage("Vizualize - No active editor.");
 			return;
 		}
 		if (activeEditor.document.languageId !== "cpp") {
-			vscode.window.showErrorMessage("Only C++ files are supported to be vizualized.");
+			vscode.window.showErrorMessage("Vizualize - Only C++ files are supported to be vizualized.");
 			return;
 		}
 		let terminalOptions = {
@@ -250,6 +244,10 @@ function activate(context) {
 		};
 		let terminal = vscode.window.createTerminal(terminalOptions);
 		let breakpoints = await getBreakpoints(activeEditor);
+		if (!breakpoints) {
+			vscode.window.showErrorMessage("Vizualize - Breakpoints could not be read.\n Make sure the active file has atleast one breakpoint.");
+			return;
+		}
 		let userCompiledPath = await compileActiveFile(context, activeEditor, terminal);
 		let inputPath = await selectFile();
 		let debugLogsPath = await createDebugLogs(context, userCompiledPath, inputPath, terminal);
