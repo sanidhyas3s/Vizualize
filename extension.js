@@ -20,7 +20,6 @@ async function getBreakpoints(activeEditor) {
 	return [Math.min(...lineNumbers).toString(), Math.max(...lineNumbers).toString()];
 }
 
-
 async function compileActiveFile(context, activeEditor, terminal) {
 	let filePath = activeEditor.document.uri.fsPath;
 	let fileName = path.parse(path.basename(filePath)).name;
@@ -66,7 +65,6 @@ function readDebugLogs(logfile, breakpoints, variablesWanted) {
 			arrayIterators.set(variable.name, variable.iterators);
 		}
 	}
-
 
 	let logFile = fs.readFileSync(logfile, 'utf-8').split('\n');
 	let logLine;
@@ -160,7 +158,6 @@ function readDebugLogs(logfile, breakpoints, variablesWanted) {
 		state.vars = vars;
 		states.push(state);
 	}
-
 	return states;
 }
 
@@ -279,6 +276,10 @@ function activate(context) {
 					setTimeout(async () => {
 						debugLogsPath = await createDebugLogs(context, userCompiledPath, inputPath, terminal);
 						breakpoints = await getBreakpoints(activeEditor);
+						if (!breakpoints) {
+							vscode.window.showErrorMessage("Vizualize - Breakpoints could not be read.\n Make sure the active file has atleast one breakpoint.");
+							return;
+						}
 						setTimeout(() => {
 							statesToAnimate = readDebugLogs(debugLogsPath, breakpoints, dataWanted);
 							panel.webview.postMessage(statesToAnimate);
