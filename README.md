@@ -10,8 +10,7 @@ Bring your code to life with our visualisations!
 
 ![Steps](media/readme/steps.gif)
 
-
-In the animation window, there are options to play, pause & restart the animation. It also options to add more variables to watch-list and an option to recompile code to reflect any changes made to the code/breakpoints.
+In the animation window, there are options to play, pause & restart the animation. It also has options to add more variables to watch-list and an option to recompile code to reflect any changes made to the code/breakpoints.
 
 ![Buttons](media/readme/buttons.jpg)
 
@@ -31,14 +30,12 @@ You can adjust the animation speed in the settings panel of VS Code under `Exten
 
 You can also customize the activation keyboard shortcut (<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Z</kbd> / <kbd>⌘</kbd>+<kbd>Alt</kbd>+<kbd>Z</kbd>) of the  extension by remapping the `vizualize.animate` command to the keycombination of your choice.
 
-
-
 ### **Requirements**
 - Visual Studio Code (obviously)
 - `g++` - A stable compliant version of the `g++` compiler
 - `gdb` - GNU Debugger (Recommended Version 12.1 or newer)
 
-Check whether your system has the above requirements with the following commands, they should return their version info if available else some error about the inavailability of the specified requirements:
+Check whether your system has the above requirements with the following commands, they should return their version info if available, else some error about the inavailability of the specified requirements:
 - `code --version`
 - `g++ --version`
 - `gdb --version`
