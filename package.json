@@ -23,6 +23,14 @@
         "title": "Vizualize"
       }
     ],
+    "keybindings": [
+      {
+        "command": "vizualize.animate",
+        "key": "ctrl+alt+z",
+        "mac": "cmd+alt+z",
+        "when": "editorTextFocus"
+      }
+    ],
     "configuration": {
       "title": "Vizualize",
       "properties": {
