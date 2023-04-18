@@ -9,7 +9,7 @@
   "description": "A Code Visualiser for C++",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.0.0"
+    "vscode": "^1.77.0"
   },
   "categories": [
     "Other"
