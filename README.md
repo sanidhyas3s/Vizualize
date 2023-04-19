@@ -35,7 +35,7 @@ You can also customize the activation keyboard shortcut (<kbd>Ctrl</kbd>+<kbd>Al
 - `g++` - A stable compliant version of the `g++` compiler
 - `gdb` - GNU Debugger (Recommended Version 12.1 or newer)
 
-Check whether your system has the above requirements with the following commands, they should return their version info if available, else some error about the inavailability of the specified requirements:
+Check whether your system has the above requirements with the following commands, they should return their version info if available, else some error about the unavailability of the specified requirements:
 - `code --version`
 - `g++ --version`
 - `gdb --version`
