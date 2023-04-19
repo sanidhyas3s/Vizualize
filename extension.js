@@ -312,7 +312,7 @@ function getWebviewContent(cssPath, speed) {
 	<html>
 	
 	<head>
-		<title>Animated Array</title>
+		<title>Vizualize</title>
 		<style>
 			${css}
 		</style>
